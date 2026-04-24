@@ -693,17 +693,14 @@ initAdmin();
 
 buildNav();
 
-// 페이지 로드 시 정적 스냅샷에서 활성 섹션/학과 복원
+// 페이지 로드 시 정적 스냅샷에서 활성 섹션/학과 복원 (관리자 모드 OFF 상태로 재렌더링)
 (function(){
   var sec = document.querySelector('#content .bc-section');
   var dept = document.querySelector('#content .bc-dept');
   if(sec && dept){
     activeSection = sec.textContent;
     activeDept = dept.textContent;
-    var header = document.querySelector('#sec-' + encodeId(activeSection) + ' .section-header');
-    if(header) header.classList.add('open');
-    var deptEl = document.getElementById('dept-' + encodeId(activeSection) + '-' + encodeId(activeDept));
-    if(deptEl) deptEl.classList.add('active');
+    selectDept(activeSection, activeDept);
   }
 })();
 </script>
