@@ -696,11 +696,35 @@ function importHTML(input){
   var reader=new FileReader();
   reader.onload=function(e){
     var text=e.target.result;
-    var m=text.match(/var DATA\s*=\s*(\[[\s\S]*?\]);/);
-    if(!m){alert('올바른 추천도서 HTML 파일이 아닙니다.');return;}
+    // DOMParser로 스크립트 태그만 추출해 DATA를 찾음 (정규식 오탐 방지)
+    var dataStr=null;
     try{
-      var newData=JSON.parse(m[1]);
-      if(!Array.isArray(newData)) throw new Error();
+      var doc=new DOMParser().parseFromString(text,'text/html');
+      var scripts=doc.querySelectorAll('script');
+      for(var si=0;si<scripts.length;si++){
+        var sc=scripts[si].textContent;
+        var idx=sc.search(/var DATA\s*=/);
+        if(idx===-1) continue;
+        var arrStart=sc.indexOf('[',idx);
+        if(arrStart===-1) continue;
+        var depth=0,inStr=false,escape=false,pos=arrStart;
+        for(;pos<sc.length;pos++){
+          var c=sc[pos];
+          if(escape){escape=false;continue;}
+          if(c==='\\'){escape=true;continue;}
+          if(c==='"'){inStr=!inStr;continue;}
+          if(inStr) continue;
+          if(c==='[') depth++;
+          else if(c===']'){depth--;if(depth===0){pos++;break;}}
+        }
+        dataStr=sc.slice(arrStart,pos);
+        break;
+      }
+    }catch(pe){}
+    if(!dataStr){alert('올바른 추천도서 HTML 파일이 아닙니다.');return;}
+    try{
+      var newData=JSON.parse(dataStr);
+      if(!Array.isArray(newData)||newData.length===0) throw new Error();
       DATA.length=0;
       newData.forEach(function(b){DATA.push(b);});
       rebuildIdx(); buildNav();
