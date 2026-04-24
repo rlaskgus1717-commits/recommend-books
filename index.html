@@ -260,7 +260,8 @@ mark{background:#fff3cd;color:#856404;border-radius:2px;padding:0 1px}
   <div id="sidebar-footer">
     <span id="total-label">총 2977권</span>
     <button id="admin-toggle" onclick="toggleAdmin()" class="on">🔒 관리자 모드</button>
-  <button id="export-btn" onclick="exportHTML()" style="margin-top: 6px; width: 100%; background: rgb(39, 174, 96); border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; color: rgb(255, 255, 255); padding: 7px 12px; border-radius: 7px; cursor: pointer; font-size: 12px; font-family: &quot;Malgun Gothic&quot;, &quot;맑은 고딕&quot;, sans-serif;">📥 HTML 내보내기</button>
+  <button id="export-btn" onclick="exportHTML()" style="margin-top:6px;width:100%;background:#27ae60;border:none;color:#fff;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:12px;font-family:'Malgun Gothic','맑은 고딕',sans-serif;">📥 HTML 내보내기</button>
+  <label id="upload-btn" style="display:none;margin-top:6px;width:100%;background:#2980b9;border:none;color:#fff;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:12px;font-family:'Malgun Gothic','맑은 고딕',sans-serif;box-sizing:border-box;text-align:center;">📤 HTML 업로드하기<input type="file" accept=".html" style="display:none" onchange="importHTML(this)"></label>
   </div>
 </aside>
 
@@ -568,6 +569,7 @@ function toggleAdmin(){
   document.getElementById('admin-toggle').textContent='🔑 관리자 모드';
   document.getElementById('admin-toggle').classList.remove('on');
   document.getElementById('export-btn').style.display='none';
+  document.getElementById('upload-btn').style.display='none';
   if(activeDept) selectDept(activeSection,activeDept);
   else if(activeSection) selectSection(activeSection);
 }
@@ -586,6 +588,7 @@ function checkPassword(){
     document.getElementById('admin-toggle').textContent='🔒 관리자 모드';
     document.getElementById('admin-toggle').classList.add('on');
     document.getElementById('export-btn').style.display='';
+    document.getElementById('upload-btn').style.display='';
     if(activeDept) selectDept(activeSection,activeDept);
     else if(activeSection) selectSection(activeSection);
   } else {
@@ -685,6 +688,35 @@ function exportHTML(){
   a.href=url; a.download='추천도서_계열별학과별.html';
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function importHTML(input){
+  var file=input.files[0];
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var text=e.target.result;
+    var m=text.match(/var DATA\s*=\s*(\[[\s\S]*?\]);/);
+    if(!m){alert('올바른 추천도서 HTML 파일이 아닙니다.');return;}
+    try{
+      var newData=JSON.parse(m[1]);
+      if(!Array.isArray(newData)) throw new Error();
+      DATA.length=0;
+      newData.forEach(function(b){DATA.push(b);});
+      rebuildIdx(); buildNav();
+      if(activeDept&&(TREE[activeSection]||{})[activeDept])
+        selectDept(activeSection,activeDept);
+      else if(activeSection&&TREE[activeSection])
+        selectSection(activeSection);
+      else
+        showWelcome();
+      alert('업로드 완료! 총 '+DATA.length+'권');
+    }catch(e){
+      alert('파일을 읽는 중 오류가 발생했습니다.');
+    }
+    input.value='';
+  };
+  reader.readAsText(file,'utf-8');
 }
 
 
