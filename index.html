@@ -700,21 +700,29 @@ async function pushToGitHub(){
   var btn=document.getElementById('github-save-btn');
   btn.textContent='⏳ 저장 중...'; btn.disabled=true;
   try{
-    var dataJSON=JSON.stringify(DATA);
-    var srcRes=await fetch(location.href+'?nocache='+Date.now());
-    var src=await srcRes.text();
-    var out=src.replace(/var DATA\s*=\s*\[[\s\S]*?\];/,function(){ return 'var DATA = '+dataJSON+';'; });
-    if(out===src) throw new Error('DATA 교체 실패');
-
+    // GitHub API로 현재 파일 내용 + SHA 가져오기
     var getRes=await fetch('https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO+'/contents/'+GH_PATH,
       {headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}});
     if(!getRes.ok) throw new Error('토큰 오류 또는 파일 조회 실패');
     var fileData=await getRes.json();
 
-    var bytes=new TextEncoder().encode(out);
-    var binStr=Array.from(bytes,function(b){return String.fromCharCode(b);}).join('');
-    var b64=btoa(binStr);
+    // base64 디코딩 → UTF-8 문자열
+    var binStr=atob(fileData.content.replace(/\n/g,''));
+    var binBytes=new Uint8Array(binStr.length);
+    for(var i=0;i<binStr.length;i++) binBytes[i]=binStr.charCodeAt(i);
+    var src=new TextDecoder('utf-8').decode(binBytes);
 
+    // DATA 교체
+    var dataJSON=JSON.stringify(DATA);
+    var out=src.replace(/var DATA\s*=\s*\[[\s\S]*?\];/,function(){ return 'var DATA = '+dataJSON+';'; });
+    if(out===src) throw new Error('DATA 교체 실패 — 파일 형식 확인 필요');
+
+    // UTF-8 → base64 인코딩
+    var outBytes=new TextEncoder().encode(out);
+    var outBin=Array.from(outBytes,function(b){return String.fromCharCode(b);}).join('');
+    var b64=btoa(outBin);
+
+    // GitHub API로 파일 업데이트
     var putRes=await fetch('https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO+'/contents/'+GH_PATH,{
       method:'PUT',
       headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
@@ -724,8 +732,8 @@ async function pushToGitHub(){
     btn.textContent='✅ 저장 완료!';
     setTimeout(function(){btn.textContent='🚀 GitHub에 저장';btn.disabled=false;},3000);
   }catch(e){
-    alert('오류: '+e.message+'\n\n토큰 문제라면 재입력하세요.');
-    localStorage.removeItem('gh_token');
+    alert('오류: '+e.message);
+    if(e.message.includes('토큰')) localStorage.removeItem('gh_token');
     btn.textContent='🚀 GitHub에 저장'; btn.disabled=false;
   }
 }
