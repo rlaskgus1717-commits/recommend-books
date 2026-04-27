@@ -314,6 +314,20 @@ DATA.forEach(function(b){
   TREE[b.section][b.dept].push(b);
 });
 
+// 책이 없어도 사이드바에 표시할 학과 사전 정의
+var EXTRA_DEPTS = {
+  '첨단학과': ['미래자동차(스마트모빌리티)학과']
+};
+(function applyExtraDepts(){
+  Object.keys(EXTRA_DEPTS).forEach(function(sec){
+    if(!TREE[sec]) TREE[sec] = {};
+    if(!COLOR[sec]) COLOR[sec] = '#888';
+    EXTRA_DEPTS[sec].forEach(function(dept){
+      if(!TREE[sec][dept]) TREE[sec][dept] = [];
+    });
+  });
+})();
+
 var activeSection = null;
 var activeDept = null;
 
@@ -663,6 +677,13 @@ function rebuildIdx(){
     if(!TREE[b.section]) TREE[b.section]={};
     if(!TREE[b.section][b.dept]) TREE[b.section][b.dept]=[];
     TREE[b.section][b.dept].push(b);
+  });
+  Object.keys(EXTRA_DEPTS).forEach(function(sec){
+    if(!TREE[sec]) TREE[sec]={};
+    if(!COLOR[sec]) COLOR[sec]='#888';
+    EXTRA_DEPTS[sec].forEach(function(dept){
+      if(!TREE[sec][dept]) TREE[sec][dept]=[];
+    });
   });
 }
 
