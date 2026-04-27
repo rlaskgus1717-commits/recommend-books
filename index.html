@@ -628,6 +628,7 @@ function deleteBook(idx){
   if(!confirm('삭제하시겠습니까?\n"'+DATA[idx].title+'"')) return;
   DATA.splice(idx,1); rebuildIdx(); persist(); buildNav();
   if(activeDept) selectDept(activeSection,activeDept);
+  autoSave();
 }
 
 function openEditModal(idx){
@@ -678,11 +679,25 @@ function saveBook(){
   }
   rebuildIdx(); persist(); closeModal(); buildNav();
   selectDept(section,dept);
+  autoSave();
 }
 
 var GH_OWNER='rlaskgus1717-commits';
 var GH_REPO='recommend-books';
 var GH_PATH='index.html';
+var _autoSaveTimer=null;
+
+function autoSave(){
+  var token=localStorage.getItem('gh_token');
+  if(!token) return;
+  var btn=document.getElementById('github-save-btn');
+  btn.textContent='💾 저장 대기 중...';
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer=setTimeout(function(){
+    btn.textContent='⏳ 저장 중...';
+    pushToGitHub(true);
+  }, 2000);
+}
 
 function getGHToken(){
   var t=localStorage.getItem('gh_token');
@@ -694,8 +709,8 @@ function getGHToken(){
   return t.trim();
 }
 
-async function pushToGitHub(){
-  var token=getGHToken();
+async function pushToGitHub(silent){
+  var token=silent?localStorage.getItem('gh_token'):getGHToken();
   if(!token) return;
   var btn=document.getElementById('github-save-btn');
   btn.textContent='⏳ 저장 중...'; btn.disabled=true;
