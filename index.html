@@ -15,7 +15,10 @@ body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;display:flex;height:
 }
 #sidebar-header{
   padding:20px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;
+  cursor:pointer;transition:background 0.15s;
 }
+#sidebar-header:hover{background:rgba(255,255,255,0.05);}
+#sidebar-header .home-hint{font-size:10px;color:rgba(255,255,255,0.25);margin-top:4px;letter-spacing:0.3px;}
 #sidebar-header h1{
   color:#fff;font-size:13px;font-weight:700;letter-spacing:0.5px;
   opacity:0.6;text-transform:uppercase;margin-bottom:4px;
@@ -44,8 +47,8 @@ body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;display:flex;height:
 .section-header:hover{background:rgba(255,255,255,0.06)}
 .section-header.open{background:rgba(255,255,255,0.12)}
 .section-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.section-name{flex:1;color:#e8ecf1;font-size:13.5px;font-weight:600;}
-.section-count{color:rgba(255,255,255,0.45);font-size:12px;font-weight:400;}
+.section-name{flex:1;color:#e8ecf1;font-size:13px;font-weight:600;}
+.section-count{color:rgba(255,255,255,0.45);font-size:11.5px;font-weight:400;}
 .section-arrow{color:rgba(255,255,255,0.35);font-size:10px;margin-left:2px;transition:transform 0.2s;}
 .section-header.open .section-arrow{transform:rotate(90deg)}
 
@@ -58,11 +61,11 @@ body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;display:flex;height:
 .dept-item:hover{background:rgba(255,255,255,0.06)}
 .dept-item.active{background:rgba(255,255,255,0.15)}
 .dept-name{
-  flex:1;font-size:12.5px;color:rgba(255,255,255,0.72);
+  flex:1;font-size:12px;color:rgba(255,255,255,0.72);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .dept-item.active .dept-name{color:#fff;font-weight:600}
-.dept-count{font-size:11.5px;color:rgba(255,255,255,0.38);margin-left:6px;flex-shrink:0;}
+.dept-count{font-size:11px;color:rgba(255,255,255,0.38);margin-left:6px;flex-shrink:0;}
 .dept-item.active .dept-count{color:rgba(255,255,255,0.65)}
 
 #sidebar-footer{padding:10px 16px;border-top:1px solid rgba(255,255,255,0.08);flex-shrink:0;}
@@ -171,10 +174,10 @@ mark{background:#fff3cd;color:#856404;border-radius:2px;padding:0 1px}
 }
 .cat-header:first-child{border-top:none;}
 .cat-header:hover{background:rgba(255,255,255,0.05)}
-.cat-arrow{color:rgba(255,255,255,0.4);font-size:9px;transition:transform 0.2s;margin-right:2px;}
+.cat-arrow{color:rgba(255,255,255,0.4);font-size:10px;transition:transform 0.2s;margin-right:2px;}
 .cat-header.open .cat-arrow{transform:rotate(90deg)}
-.cat-name{flex:1;color:rgba(255,255,255,0.85);font-size:11.5px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;}
-.cat-count{color:rgba(255,255,255,0.3);font-size:11px;}
+.cat-name{flex:1;color:rgba(255,255,255,0.9);font-size:13.5px;font-weight:700;letter-spacing:0.2px;}
+.cat-count{color:rgba(255,255,255,0.35);font-size:12px;}
 .cat-sections{display:none;}
 .cat-header.open ~ .cat-sections{display:block;}
 .section-header{padding-left:22px;}
@@ -267,9 +270,10 @@ mark{background:#fff3cd;color:#856404;border-radius:2px;padding:0 1px}
 <div id="overlay" onclick="toggleSidebar()"></div>
 
 <aside id="sidebar">
-  <div id="sidebar-header">
+  <div id="sidebar-header" onclick="goHome()">
     <h1>혜화여자고등학교</h1>
     <h2>추천도서 목록</h2>
+    <div class="home-hint">🏠 홈으로</div>
   </div>
   <div id="search-wrap">
     <input id="searchInput" type="text" placeholder="도서명·저자 검색..." oninput="doSearch(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
@@ -622,6 +626,13 @@ function showWelcome(){
   document.getElementById('content').classList.remove('visible');
   document.getElementById('search-panel').classList.remove('visible');
 }
+function goHome(){
+  activeSection = null;
+  activeDept = null;
+  clearActiveItems();
+  document.getElementById('searchInput').value = '';
+  showWelcome();
+}
 function hideSearch(){
   document.getElementById('search-panel').classList.remove('visible');
 }
@@ -929,6 +940,8 @@ setTimeout(function(){ document.getElementById('searchInput').value = ''; }, 50)
     activeSection = sec.textContent;
     activeDept = dept.textContent;
     selectDept(activeSection, activeDept);
+  } else {
+    showWelcome();
   }
 })();
 </script>
