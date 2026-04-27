@@ -810,6 +810,7 @@ initAdmin();
 
 buildNav();
 document.getElementById('searchInput').value = '';
+window.addEventListener('load', function(){ document.getElementById('searchInput').value = ''; });
 
 // 페이지 로드 시 정적 스냅샷에서 활성 섹션/학과 복원 (관리자 모드 OFF 상태로 재렌더링)
 (function(){
