@@ -162,6 +162,24 @@ mark{background:#fff3cd;color:#856404;border-radius:2px;padding:0 1px}
   #welcome{padding-top:60px}
 }
 
+/* ===== CATEGORY ===== */
+.cat-header{
+  display:flex;align-items:center;gap:6px;
+  padding:9px 14px 9px 12px;cursor:pointer;user-select:none;
+  transition:background 0.15s;
+  border-top:1px solid rgba(255,255,255,0.06);
+}
+.cat-header:first-child{border-top:none;}
+.cat-header:hover{background:rgba(255,255,255,0.05)}
+.cat-arrow{color:rgba(255,255,255,0.4);font-size:9px;transition:transform 0.2s;margin-right:2px;}
+.cat-header.open .cat-arrow{transform:rotate(90deg)}
+.cat-name{flex:1;color:rgba(255,255,255,0.85);font-size:11.5px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;}
+.cat-count{color:rgba(255,255,255,0.3);font-size:11px;}
+.cat-sections{display:none;}
+.cat-header.open ~ .cat-sections{display:block;}
+.section-header{padding-left:22px;}
+.dept-item{padding-left:40px;}
+
 /* ===== ADMIN ===== */
 #sidebar-footer{display:flex;flex-direction:column;gap:0;}
 #admin-toggle{
@@ -315,55 +333,124 @@ function encodeId(s){
   return encodeURIComponent(s).replace(/%/g,'_');
 }
 
+var CATEGORIES = [
+  {name:'인문·사회계열', sections:['인문계열','사회과학계열','상경계열','법학행정계열','교육계열']},
+  {name:'자연·공학계열', sections:['자연과학계열','기계전자컴퓨터계열','건축환경계열','생명화학신소재계열','공학계열','첨단학과','농림수산계열']},
+  {name:'의학·보건·생활계열', sections:['의학계열','의약학계열','간호보건계열','생활과학계열']},
+  {name:'예체능계열', sections:['예체능계열']},
+  {name:'특수·융합계열', sections:['자율전공','군사학과','주제별 추천도서']}
+];
+
+function getSectionCategory(section){
+  for(var i=0;i<CATEGORIES.length;i++){
+    if(CATEGORIES[i].sections.indexOf(section)!==-1) return CATEGORIES[i].name;
+  }
+  return '기타';
+}
+
 function buildNav(){
   var nav = document.getElementById('nav');
   nav.innerHTML = '';
-  var total = 0;
-  var deptCount = 0;
+  var total = 0, deptCount = 0;
 
-  Object.keys(TREE).forEach(function(section){
-    var depts = TREE[section];
-    var sectionTotal = 0;
-    Object.keys(depts).forEach(function(d){ sectionTotal += depts[d].length; deptCount++; });
-    total += sectionTotal;
-    var color = COLOR[section] || '#888';
+  // 카테고리별 섹션 목록 구성 (TREE에 있는 섹션만)
+  var catMap = {};
+  CATEGORIES.forEach(function(c){ catMap[c.name] = []; });
+  catMap['기타'] = [];
+  Object.keys(TREE).forEach(function(sec){
+    var cn = getSectionCategory(sec);
+    if(!catMap[cn]) catMap[cn] = [];
+    catMap[cn].push(sec);
+  });
 
-    var item = document.createElement('div');
-    item.className = 'section-item';
-    item.id = 'sec-' + encodeId(section);
+  var catOrder = CATEGORIES.map(function(c){return c.name;});
+  if(catMap['기타'].length) catOrder.push('기타');
 
-    var header = document.createElement('div');
-    header.className = 'section-header';
-    header.innerHTML =
-      '<span class="section-dot" style="background:'+color+'"></span>' +
-      '<span class="section-name">'+esc(section)+'</span>' +
-      '<span class="section-count">'+sectionTotal+'</span>' +
-      '<span class="section-arrow">&#9654;</span>';
-    header.addEventListener('click', (function(sec, hdr){ return function(){ toggleSection(sec, hdr); }; })(section, header));
+  catOrder.forEach(function(catName){
+    var sections = catMap[catName];
+    if(!sections || !sections.length) return;
 
-    var deptList = document.createElement('div');
-    deptList.className = 'dept-list';
-    deptList.id = 'depts-' + encodeId(section);
+    var catTotal = 0;
+    sections.forEach(function(sec){
+      Object.keys(TREE[sec]||{}).forEach(function(d){ catTotal += (TREE[sec][d]||[]).length; deptCount++; });
+      total += catTotal; // 임시 — 아래서 정확히 계산
+    });
+    // 위 합산 중복 제거: catTotal만 사용
+    catTotal = 0;
+    sections.forEach(function(sec){
+      Object.keys(TREE[sec]||{}).forEach(function(d){ catTotal += (TREE[sec][d]||[]).length; });
+    });
+    total += catTotal;
 
-    Object.keys(depts).forEach(function(dept){
-      var books = depts[dept];
-      var di = document.createElement('div');
-      di.className = 'dept-item';
-      di.id = 'dept-' + encodeId(section) + '-' + encodeId(dept);
-      di.innerHTML =
-        '<span class="dept-name">'+esc(dept)+'</span>' +
-        '<span class="dept-count">'+books.length+'권</span>';
-      di.addEventListener('click', (function(sec, dep){ return function(e){ e.stopPropagation(); selectDept(sec, dep); }; })(section, dept));
-      deptList.appendChild(di);
+    var catDiv = document.createElement('div');
+    catDiv.className = 'cat-item';
+
+    var catHdr = document.createElement('div');
+    catHdr.className = 'cat-header';
+    catHdr.innerHTML =
+      '<span class="cat-arrow">&#9654;</span>' +
+      '<span class="cat-name">'+esc(catName)+'</span>' +
+      '<span class="cat-count">'+catTotal+'권</span>';
+    catHdr.addEventListener('click', function(){
+      catHdr.classList.toggle('open');
     });
 
-    item.appendChild(header);
-    item.appendChild(deptList);
-    nav.appendChild(item);
+    var catSections = document.createElement('div');
+    catSections.className = 'cat-sections';
+
+    sections.forEach(function(section){
+      if(!TREE[section]) return;
+      var depts = TREE[section];
+      var sectionTotal = 0;
+      Object.keys(depts).forEach(function(d){ sectionTotal += depts[d].length; });
+      var color = COLOR[section] || '#888';
+
+      var item = document.createElement('div');
+      item.className = 'section-item';
+      item.id = 'sec-' + encodeId(section);
+
+      var header = document.createElement('div');
+      header.className = 'section-header';
+      header.innerHTML =
+        '<span class="section-dot" style="background:'+color+'"></span>' +
+        '<span class="section-name">'+esc(section)+'</span>' +
+        '<span class="section-count">'+sectionTotal+'</span>' +
+        '<span class="section-arrow">&#9654;</span>';
+      header.addEventListener('click', (function(sec, hdr){ return function(){ toggleSection(sec, hdr); }; })(section, header));
+
+      var deptList = document.createElement('div');
+      deptList.className = 'dept-list';
+      deptList.id = 'depts-' + encodeId(section);
+
+      Object.keys(depts).forEach(function(dept){
+        var books = depts[dept];
+        var di = document.createElement('div');
+        di.className = 'dept-item';
+        di.id = 'dept-' + encodeId(section) + '-' + encodeId(dept);
+        di.innerHTML =
+          '<span class="dept-name">'+esc(dept)+'</span>' +
+          '<span class="dept-count">'+books.length+'권</span>';
+        di.addEventListener('click', (function(sec, dep){ return function(e){ e.stopPropagation(); selectDept(sec, dep); }; })(section, dept));
+        deptList.appendChild(di);
+      });
+
+      item.appendChild(header);
+      item.appendChild(deptList);
+      catSections.appendChild(item);
+    });
+
+    catDiv.appendChild(catHdr);
+    catDiv.appendChild(catSections);
+    nav.appendChild(catDiv);
+  });
+
+  // total 재계산 (위 루프에서 중복 합산됨)
+  total = 0; deptCount = 0;
+  Object.keys(TREE).forEach(function(sec){
+    Object.keys(TREE[sec]).forEach(function(d){ total += TREE[sec][d].length; deptCount++; });
   });
 
   document.getElementById('total-label').textContent = '총 ' + total + '권';
-
   var sectCount = Object.keys(TREE).length;
   document.getElementById('welcome-stats').innerHTML =
     '<div class="stat-box"><div class="num">' + sectCount + '</div><div class="lbl">계열</div></div>' +
@@ -429,7 +516,12 @@ function selectDept(section, dept){
   clearActiveItems();
 
   var header = document.querySelector('#sec-' + encodeId(section) + ' .section-header');
-  if(header) header.classList.add('open');
+  if(header){
+    header.classList.add('open');
+    // 부모 카테고리도 열기
+    var catSec = header.closest('.cat-sections');
+    if(catSec){ var catHdr = catSec.previousElementSibling; if(catHdr) catHdr.classList.add('open'); }
+  }
   var deptEl = document.getElementById('dept-' + encodeId(section) + '-' + encodeId(dept));
   if(deptEl) deptEl.classList.add('active');
 
